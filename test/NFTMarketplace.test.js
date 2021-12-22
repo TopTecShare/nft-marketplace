@@ -14,8 +14,8 @@ contract('NFTMarketplace', (accounts) => {
     const NFTaddress = nftContract.address;
     mktContract = await NFTMarketplace.new(NFTaddress);
 
-    await nftContract.safeMint('testURI');
-    await nftContract.safeMint('testURI2');
+    await nftContract.safeMint('testURI', 100);
+    await nftContract.safeMint('testURI2', 100);
   });
 
   describe('Make Offer', () => {
@@ -62,6 +62,7 @@ contract('NFTMarketplace', (accounts) => {
     it('fills the offer and emits Event', async() => {
       const result = await mktContract.fillOffer(1, { from: accounts[1], value: 10 });
       const offer = await mktContract.offers(1);
+      console.log(offer);
       assert.equal(offer.fulfilled, true);
       const userFunds = await mktContract.userFunds(offer.user);
       assert.equal(userFunds.toNumber(), 10);

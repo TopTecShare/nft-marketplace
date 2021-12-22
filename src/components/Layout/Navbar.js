@@ -66,7 +66,7 @@ const Navbar = () => {
               className="btn btn-info btn-block navbar-btn text-white" 
               onClick={claimFundsHandler}
             >          
-              {`CLAIM ${formatPrice(marketplaceCtx.userFunds)} ETH`}
+              {`CLAIM ${formatPrice(marketplaceCtx.userFunds, 10000000)} ETH`}
             </button>}
           {fundsLoading &&
             <div class="d-flex justify-content-center text-info">

@@ -6,12 +6,15 @@ import CollectionContext from '../../../store/collection-context';
 const ipfsClient = require('ipfs-http-client');
 const ipfs = ipfsClient.create({ host: 'ipfs.infura.io', port: 5001, protocol: 'https' });
 
-const MintForm = () => {  
+const MintForm = () => {
   const [enteredName, setEnteredName] = useState('');
-  const [descriptionIsValid, setDescriptionIsValid] = useState(true);
+  const [nameIsValid, setNameIsValid] = useState(true);
 
   const [enteredDescription, setEnteredDescription] = useState('');
-  const [nameIsValid, setNameIsValid] = useState(true);
+  const [descriptionIsValid, setDescriptionIsValid] = useState(true);
+
+  const [enteredRoyalty, setEnteredRoyalty] = useState(2.5);
+  const [royaltyIsValid, setRoyaltyIsValid] = useState(true);
 
   const [capturedFileBuffer, setCapturedFileBuffer] = useState(null);
   const [fileIsValid, setFileIsValid] = useState(true);
@@ -26,7 +29,14 @@ const MintForm = () => {
   const enteredDescriptionHandler = (event) => {
     setEnteredDescription(event.target.value);
   };
-  
+
+  const enteredRoyaltyHandler = (event) => {
+    const precision = 100; // Use 2 decimal places
+    event.target.value = Math.round(event.target.value * precision) / precision;
+    if (event.target.value >= 0 && event.target.value <= 10)
+      setEnteredRoyalty(event.target.value);
+  };
+
   const captureFile = (event) => {
     event.preventDefault();
 
@@ -35,24 +45,25 @@ const MintForm = () => {
     const reader = new window.FileReader();
     reader.readAsArrayBuffer(file);
     reader.onloadend = () => {
-      setCapturedFileBuffer(Buffer(reader.result));     
+      setCapturedFileBuffer(Buffer(reader.result));
     }
-  };  
-  
+  };
+
   const submissionHandler = (event) => {
     event.preventDefault();
 
     enteredName ? setNameIsValid(true) : setNameIsValid(false);
     enteredDescription ? setDescriptionIsValid(true) : setDescriptionIsValid(false);
+    enteredRoyalty ? setRoyaltyIsValid(true) : setRoyaltyIsValid(false);
     capturedFileBuffer ? setFileIsValid(true) : setFileIsValid(false);
 
-    const formIsValid = enteredName && enteredDescription && capturedFileBuffer;
+    const formIsValid = enteredName && enteredDescription && capturedFileBuffer && enteredRoyalty;
 
     // Upload file to IPFS and push to the blockchain
-    const mintNFT = async() => {
+    const mintNFT = async () => {
       // Add file to the IPFS
       const fileAdded = await ipfs.add(capturedFileBuffer);
-      if(!fileAdded) {
+      if (!fileAdded) {
         console.error('Something went wrong when updloading the file');
         return;
       }
@@ -77,29 +88,30 @@ const MintForm = () => {
       };
 
       const metadataAdded = await ipfs.add(JSON.stringify(metadata));
-      if(!metadataAdded) {
+      if (!metadataAdded) {
         console.error('Something went wrong when updloading the file');
         return;
       }
-      
-      collectionCtx.contract.methods.safeMint(metadataAdded.path).send({ from: web3Ctx.account })
-      .on('transactionHash', (hash) => {
-        collectionCtx.setNftIsLoading(true);
-      })
-      .on('error', (e) =>{
-        window.alert('Something went wrong when pushing to the blockchain');
-        collectionCtx.setNftIsLoading(false);  
-      })      
+
+      collectionCtx.contract.methods.safeMint(metadataAdded.path, enteredRoyalty * 100).send({ from: web3Ctx.account })
+        .on('transactionHash', (hash) => {
+          collectionCtx.setNftIsLoading(true);
+        })
+        .on('error', (e) => {
+          window.alert('Something went wrong when pushing to the blockchain');
+          collectionCtx.setNftIsLoading(false);
+        })
     };
 
     formIsValid && mintNFT();
   };
 
-  const nameClass = nameIsValid? "form-control" : "form-control is-invalid";
-  const descriptionClass = descriptionIsValid? "form-control" : "form-control is-invalid";
-  const fileClass = fileIsValid? "form-control" : "form-control is-invalid";
-  
-  return(
+  const nameClass = nameIsValid ? "form-control" : "form-control is-invalid";
+  const descriptionClass = descriptionIsValid ? "form-control" : "form-control is-invalid";
+  const royaltyClass = royaltyIsValid ? "form-control" : "form-control is-invalid";
+  const fileClass = fileIsValid ? "form-control" : "form-control is-invalid";
+
+  return (
     <form onSubmit={submissionHandler}>
       <div className="row justify-content-center">
         <div className="col-md-2">
@@ -111,13 +123,23 @@ const MintForm = () => {
             onChange={enteredNameHandler}
           />
         </div>
-        <div className="col-md-6">
+        <div className="col-md-3">
           <input
             type='text'
             className={`${descriptionClass} mb-1`}
             placeholder='Description...'
             value={enteredDescription}
             onChange={enteredDescriptionHandler}
+          />
+        </div>
+        <div className="col-md-3">
+          <input
+            type="number"
+            className={`${royaltyClass} mb-1`}
+            step="0.01"
+            placeholder="Royalty..."
+            value={enteredRoyalty}
+            onChange={enteredRoyaltyHandler}
           />
         </div>
         <div className="col-md-2">
