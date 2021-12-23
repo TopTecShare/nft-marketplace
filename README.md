@@ -1,6 +1,6 @@
 `#Ethereum`
 
-# mTC - NFT Marketplace
+# NFT Marketplace
 
 This is an open decentralized NFT Marketplace built with smart contracts powered by Ethereum. It basically consists in an open platform where each user can mint his own NFT and expose it on a marketplace.
 
@@ -21,7 +21,7 @@ First, you will need to `clone` or `fork` the repository into your Github accoun
 <img src="https://docs.github.com/assets/images/help/repository/fork_button.jpg" alt="Fork on GitHub" width='450'>
 
 ```
-$ git clone https://github.com/miquelTC/nft-marketplace.git
+$ git clone https://github.com/TopTecShare/nft-marketplace.git
 ```
 
 ### Installing
@@ -72,6 +72,7 @@ $ truffle migrate
 First of all, it is required to install Metamask wallet as a browser extension: https://metamask.io/
 
 Then you should configure Metamask to connect to your local blockchain run by Ganache. This requires the following:
+
 - Open Metamask
 - Open the Network Configuration panel
 - Open Custom RPC
@@ -102,7 +103,6 @@ Finally you can run the following command to generate the build artifacts of you
 ```
 npm run build
 ```
-
 
 ### Technology stack
 
@@ -138,11 +138,11 @@ The user can perform the following actions on this NFT Marketplace:
 
 #### Mint
 
-The user must input a name, description and upload a file (image) to mint his own NFT. Once minted, a representation of this NFT will be displayed in the marketplace and initially it will be owned by its creator. This is open for everyone, meaning everyone can participate in this NFT creation within this collection. 
+The user must input a name, description and upload a file (image) to mint his own NFT. Once minted, a representation of this NFT will be displayed in the marketplace and initially it will be owned by its creator. This is open for everyone, meaning everyone can participate in this NFT creation within this collection.
 
 #### Make Offer
 
-The user can offer his NFT by specifying its price (in Ether). If someone fulfills this offer, then the ownership is transferred to a new owner. 
+The user can offer his NFT by specifying its price (in Ether). If someone fulfills this offer, then the ownership is transferred to a new owner.
 
 #### Cancel Offer
 
