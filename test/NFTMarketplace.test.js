@@ -14,8 +14,8 @@ contract('NFTMarketplace', (accounts) => {
     const NFTaddress = nftContract.address;
     mktContract = await NFTMarketplace.new(NFTaddress);
 
-    await nftContract.safeMint('testURI', 100);
-    await nftContract.safeMint('testURI2', 100);
+    await nftContract.safeMint('testURI', 100); // royalty: 1%
+    await nftContract.safeMint('testURI2', 100); // royalty: 1%
   });
 
   describe('Make Offer', () => {

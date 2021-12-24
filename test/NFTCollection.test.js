@@ -18,14 +18,14 @@ contract('NFTCollection', (accounts) => {
       assert.notEqual(address, undefined);
     });
 
-    xit('has a name', async() => {
+    it('has a name', async() => {
       const name = await contract.name();
-      assert.equal(name, 'mTC Collection');
+      assert.equal(name, 'Art Collection');
     });
 
-    xit('has a symbol', async() => {
+    it('has a symbol', async() => {
       const symbol = await contract.symbol();
-      assert.equal(symbol, 'mTC');
+      assert.equal(symbol, 'Art');
     });
   });
 
