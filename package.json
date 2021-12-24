@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^4.2.0",
-    "@openzeppelin/test-helpers": "^0.5.12",
+    "@openzeppelin/test-helpers": "^0.5.15",
     "dotenv": "^10.0.0",
     "truffle": "^5.3.14",
     "truffle-hdwallet-provider-privkey": "^0.3.0"

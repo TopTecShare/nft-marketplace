@@ -253,7 +253,7 @@ contract NFTMarketplace {
             "The owner of the auction cannot bid it"
         );
         uint256 limit = nftAuctions[_tokenId].nftHighestBid;
-        if (limit < nftAuctions[_tokenId].buyNowPrice) {
+        if (limit > nftAuctions[_tokenId].buyNowPrice) {
             if (limit / 10 > 0.01 ether) limit = (limit * 11) / 10;
             else limit += 0.01 ether;
         } else limit = nftAuctions[_tokenId].buyNowPrice;
@@ -273,7 +273,7 @@ contract NFTMarketplace {
         _marketTransfer(msg.value / 10, _tokenId, _receiver);
 
         nftAuctions[_tokenId].nftHighestBidder = msg.sender;
-        nftAuctions[_tokenId].nftHighestBid = uint256(msg.value);
+        nftAuctions[_tokenId].nftHighestBid = msg.value;
         if (nftAuctions[_tokenId].auctionEnd < block.timestamp + 10 minutes)
             nftAuctions[_tokenId].auctionEnd = block.timestamp + 10 minutes;
 
