@@ -5,6 +5,7 @@ import "./NFTCollection.sol";
 
 contract NFTMarketplace {
     uint256 public offerCount;
+    uint256 marketFee = 250;
     mapping(uint256 => _Offer) public offers;
     mapping(address => uint256) public userFunds;
     mapping(uint256 => Auction) public nftAuctions;
@@ -14,23 +15,19 @@ contract NFTMarketplace {
     struct _Offer {
         uint256 offerId;
         uint256 id;
-        address user;
         uint256 price;
+        address user;
         bool fulfilled;
         bool cancelled;
     }
 
     struct Auction {
         //map token ID to
-        uint128 buyNowPrice;
-        uint128 nftHighestBid;
+        uint256 buyNowPrice;
+        uint256 nftHighestBid;
         uint256 auctionEnd;
-        uint256 bidderCount;
         address nftHighestBidder;
-        mapping(address => uint128) nftBidderAmount;
-        mapping(uint256 => address) nftBidderAddress;
         address nftSeller;
-        // address ERC20Token; // The seller can specify an ERC20 token that can be used to bid or purchase the NFT.
     }
 
     event Offer(
@@ -44,27 +41,28 @@ contract NFTMarketplace {
 
     event NftAuctionCreated(
         uint256 auctionEnd,
-        uint128 buyNowPrice,
+        uint256 buyNowPrice,
         uint256 tokenId,
         address nftSeller
     );
 
     event NftAuctionCanceled(uint256 tokenId, address nftSeller);
+    event NftAuctionSettled(
+        uint256 tokenId,
+        address nftSeller,
+        uint256 buyNowPrice,
+        address winner,
+        uint256 price
+    );
 
     event BidCreated(
-        uint256 id,
-        uint256 bidId,
+        uint256 tokenId,
         uint256 nftHighestBid,
         address nftHighestBidder,
         uint256 auctionEnd
     );
 
-    event BidCanceled(
-        uint256 id,
-        uint256 bidId,
-        uint256 nftHighestBid,
-        address nftHighestBidder
-    );
+    event BidCanceled(uint256 tokenId);
 
     event OfferFilled(uint256 offerId, uint256 id, address newOwner);
     // event OfferUpdated(uint256 offerId, uint256 price);
@@ -132,14 +130,30 @@ contract NFTMarketplace {
         _owner = newOwner;
     }
 
+    function _marketTransfer(
+        uint256 _price,
+        uint256 _tokenId,
+        address _receiver
+    ) internal {
+        require(_price > 0);
+        uint256 royalty = nftCollection.royalty(_tokenId);
+        address inventor = nftCollection.inventor(_tokenId);
+        userFunds[_owner] += (_price * marketFee) / 10000;
+        userFunds[inventor] += (_price * royalty) / 10000;
+        userFunds[_receiver] +=
+            _price -
+            (_price * (marketFee + royalty)) /
+            10000;
+    }
+
     function makeOffer(uint256 _id, uint256 _price) public {
         nftCollection.transferFrom(msg.sender, address(this), _id);
         offerCount++;
         offers[offerCount] = _Offer(
             offerCount,
             _id,
-            msg.sender,
             _price,
+            msg.sender,
             false,
             false
         );
@@ -162,14 +176,7 @@ contract NFTMarketplace {
         );
         nftCollection.transferFrom(address(this), msg.sender, _offer.id);
         _offer.fulfilled = true;
-        userFunds[_owner] += (_offer.price * 250) / 10000;
-        userFunds[nftCollection.inventor(_offer.id)] +=
-            (_offer.price * nftCollection.royalty(_offer.id)) /
-            10000;
-        userFunds[_offer.user] +=
-            _offer.price -
-            (_offer.price * (250 + nftCollection.royalty(_offer.id))) /
-            10000;
+        _marketTransfer(msg.value, _offer.id, _offer.user);
         userFunds[msg.sender] -= _offer.price - msg.value;
         emit OfferFilled(_offerId, _offer.id, msg.sender);
     }
@@ -211,130 +218,146 @@ contract NFTMarketplace {
     }
 
     function makeAuction(
-        uint256 _id,
-        uint128 _price,
-        uint128 period
+        uint256 _tokenId,
+        uint256 _price,
+        uint256 period
     ) public {
-        nftCollection.transferFrom(msg.sender, address(this), _id);
+        nftCollection.transferFrom(msg.sender, address(this), _tokenId);
 
-        nftAuctions[_id].buyNowPrice = _price;
-        nftAuctions[_id].auctionEnd = block.timestamp + period * 1 hours;
-        nftAuctions[_id].nftSeller = msg.sender;
+        nftAuctions[_tokenId].buyNowPrice = _price;
+        nftAuctions[_tokenId].auctionEnd = block.timestamp + period * 1 hours;
+        nftAuctions[_tokenId].nftSeller = msg.sender;
 
         emit NftAuctionCreated(
-            nftAuctions[_id].auctionEnd,
+            nftAuctions[_tokenId].auctionEnd,
             _price,
-            _id,
+            _tokenId,
             msg.sender
         );
     }
 
-    function makeBid(uint256 _id) public payable {
+    function cancelAuction(uint256 _tokenId) public {
         require(
-            nftAuctions[_id].nftSeller != address(0),
-            "The auction must exist"
-        );
-        require(
-            nftAuctions[_id].auctionEnd > block.timestamp,
-            "Auction has ended"
-        );
-        require(
-            nftAuctions[_id].nftSeller != msg.sender,
-            "The owner of the auction cannot bid it"
-        );
-        uint128 bonus = nftAuctions[_id].nftHighestBid;
-        if (bonus < nftAuctions[_id].buyNowPrice) {
-            if (bonus / 10 < 0.1 ether) bonus = (bonus * 11) / 10;
-            else bonus += 0.1 ether;
-        } else bonus = nftAuctions[_id].buyNowPrice;
-        require(
-            msg.value >= bonus,
-            "The ETH amount should be more than 101% of NFT highest bid Price"
-        );
-        nftAuctions[_id].nftHighestBidder = msg.sender;
-        nftAuctions[_id].nftHighestBid = uint128(msg.value);
-        nftAuctions[_id].nftBidderAmount[msg.sender] = nftAuctions[_id]
-            .nftHighestBid;
-        nftAuctions[_id].bidderCount++;
-        nftAuctions[_id].nftBidderAddress[nftAuctions[_id].bidderCount] = msg
-            .sender;
-        if (nftAuctions[_id].auctionEnd < block.timestamp + 15 minutes)
-            nftAuctions[_id].auctionEnd = block.timestamp + 15 minutes;
-
-        emit BidCreated(
-            _id,
-            nftAuctions[_id].bidderCount,
-            nftAuctions[_id].nftHighestBid,
-            msg.sender,
-            nftAuctions[_id].auctionEnd
-        );
-    }
-
-    function cancelBid(uint256 _id, uint256 _bidId) public {
-        require(
-            nftAuctions[_id].nftSeller != address(0),
-            "The auction must exist"
-        );
-        require(
-            nftAuctions[_id].auctionEnd > block.timestamp,
-            "Auction has ended"
-        );
-        require(
-            nftAuctions[_id].nftBidderAddress[_bidId] == msg.sender,
-            "Bid must exsit"
-        );
-
-        nftAuctions[_id].nftBidderAddress[_bidId] = address(0);
-        userFunds[msg.sender] = nftAuctions[_id].nftBidderAmount[msg.sender];
-        nftAuctions[_id].nftBidderAmount[msg.sender] = 0;
-
-        if (nftAuctions[_id].nftHighestBidder == msg.sender) {
-            uint128 topPrice = 0;
-            address topAddress = address(0);
-            for (uint256 i = 1; i <= nftAuctions[_id].bidderCount; i++)
-                if (
-                    nftAuctions[_id].nftBidderAmount[
-                        nftAuctions[_id].nftBidderAddress[i]
-                    ] > topPrice
-                ) {
-                    topPrice = nftAuctions[_id].nftBidderAmount[
-                        nftAuctions[_id].nftBidderAddress[i]
-                    ];
-                    topAddress = nftAuctions[_id].nftBidderAddress[i];
-                }
-
-            nftAuctions[_id].nftHighestBid = topPrice;
-            nftAuctions[_id].nftHighestBidder = topAddress;
-        }
-
-        emit BidCanceled(
-            _id,
-            _bidId,
-            nftAuctions[_id].nftHighestBid,
-            nftAuctions[_id].nftHighestBidder
-        );
-    }
-
-    function cancelAuction(uint256 _id) public {
-        require(
-            nftAuctions[_id].nftSeller != msg.sender,
+            nftAuctions[_tokenId].nftSeller != msg.sender,
             "The only owner of the auction can cancel it"
         );
         require(
-            nftAuctions[_id].nftHighestBid < nftAuctions[_id].buyNowPrice,
+            nftAuctions[_tokenId].nftHighestBid <
+                nftAuctions[_tokenId].buyNowPrice,
             "The bid must not exist"
         );
-        nftCollection.transferFrom(address(this), msg.sender, _id);
+        nftCollection.transferFrom(address(this), msg.sender, _tokenId);
 
-        nftAuctions[_id].buyNowPrice = 0;
-        nftAuctions[_id].auctionEnd = 0;
-        nftAuctions[_id].nftSeller = address(0);
+        nftAuctions[_tokenId].buyNowPrice = 0;
+        nftAuctions[_tokenId].auctionEnd = 0;
+        nftAuctions[_tokenId].nftSeller = address(0);
 
-        emit NftAuctionCanceled(_id, msg.sender);
+        emit NftAuctionCanceled(_tokenId, msg.sender);
     }
 
-    function settleAuction(uint256 _offerId) public {
+    function settleAuction(uint256 _tokenId) public {
+        require(
+            nftAuctions[_tokenId].nftSeller != address(0),
+            "The auction must exist"
+        );
+        require(
+            nftAuctions[_tokenId].auctionEnd > block.timestamp,
+            "Auction should be ended"
+        );
 
+        emit NftAuctionSettled(
+            _tokenId,
+            nftAuctions[_tokenId].nftSeller,
+            nftAuctions[_tokenId].buyNowPrice,
+            nftAuctions[_tokenId].nftHighestBidder,
+            nftAuctions[_tokenId].nftHighestBid
+        );
+
+        if (nftAuctions[_tokenId].nftHighestBidder != address(0)) {
+            _marketTransfer(
+                nftAuctions[_tokenId].nftHighestBid -
+                    nftAuctions[_tokenId].nftHighestBid /
+                    10,
+                _tokenId,
+                nftAuctions[_tokenId].nftSeller
+            );
+        }
+
+        nftAuctions[_tokenId].buyNowPrice = 0;
+        nftAuctions[_tokenId].auctionEnd = 0;
+        nftAuctions[_tokenId].nftSeller = address(0);
+        nftAuctions[_tokenId].nftHighestBid = 0;
+        nftAuctions[_tokenId].nftHighestBidder = address(0);
+    }
+
+    function makeBid(uint256 _tokenId) public payable {
+        require(
+            nftAuctions[_tokenId].nftSeller != address(0),
+            "The auction must exist"
+        );
+        require(
+            nftAuctions[_tokenId].auctionEnd > block.timestamp,
+            "Auction has ended"
+        );
+        require(
+            nftAuctions[_tokenId].nftSeller != msg.sender,
+            "The owner of the auction cannot bid it"
+        );
+        uint256 limit = nftAuctions[_tokenId].nftHighestBid;
+        if (limit < nftAuctions[_tokenId].buyNowPrice) {
+            if (limit / 10 > 0.01 ether) limit = (limit * 11) / 10;
+            else limit += 0.01 ether;
+        } else limit = nftAuctions[_tokenId].buyNowPrice;
+        require(
+            msg.value >= limit,
+            "The ETH amount should be more than 110% of NFT highest bid Price"
+        );
+
+        address _receiver = nftAuctions[_tokenId].nftHighestBidder;
+        if (_receiver == address(0))
+            _receiver = nftAuctions[_tokenId].nftSeller;
+        else
+            userFunds[_receiver] =
+                nftAuctions[_tokenId].nftHighestBid -
+                nftAuctions[_tokenId].nftHighestBid /
+                10;
+        _marketTransfer(msg.value / 10, _tokenId, _receiver);
+
+        nftAuctions[_tokenId].nftHighestBidder = msg.sender;
+        nftAuctions[_tokenId].nftHighestBid = uint256(msg.value);
+        if (nftAuctions[_tokenId].auctionEnd < block.timestamp + 10 minutes)
+            nftAuctions[_tokenId].auctionEnd = block.timestamp + 10 minutes;
+
+        emit BidCreated(
+            _tokenId,
+            nftAuctions[_tokenId].nftHighestBid,
+            msg.sender,
+            nftAuctions[_tokenId].auctionEnd
+        );
+    }
+
+    function cancelBid(uint256 _tokenId) public {
+        require(
+            nftAuctions[_tokenId].nftSeller != address(0),
+            "The auction must exist"
+        );
+        require(
+            nftAuctions[_tokenId].auctionEnd > block.timestamp,
+            "Auction has ended"
+        );
+        require(
+            msg.sender == nftAuctions[_tokenId].nftHighestBidder,
+            "Only highest bidder can cancel the bid"
+        );
+
+        userFunds[msg.sender] =
+            nftAuctions[_tokenId].nftHighestBid -
+            nftAuctions[_tokenId].nftHighestBid /
+            10;
+        nftAuctions[_tokenId].nftHighestBidder = address(0);
+        nftAuctions[_tokenId].nftHighestBid = 0;
+
+        emit BidCanceled(_tokenId);
     }
 
     function claimFunds() public {
