@@ -187,7 +187,7 @@ contract NFTMarketplace {
 
     function cancelAuction(uint256 _tokenId) public {
         require(
-            nftAuctions[_tokenId].nftSeller != msg.sender,
+            nftAuctions[_tokenId].nftSeller == msg.sender,
             "The only owner of the auction can cancel it"
         );
         require(

@@ -148,13 +148,16 @@ contract('NFTMarketplace', (accounts) => {
     it('Make Auction', async () => {
       await nftContract.safeMint('testURI3', 100); // royalty: 1%
       await nftContract.approve(mktContract.address, 3);
-      await mktContract.makeAuction(3, String(10 * 10 ** 18), 4);
+      await mktContract.makeAuction(3, String(1.0 * 10 ** 18), 4);
+      await mktContract.cancelAuction(3);
+      await nftContract.approve(mktContract.address, 3);
+      await mktContract.makeAuction(3, String(1.0 * 10 ** 18), 4);
       await mktContract.makeBid(3, { from: accounts[2], value: String(1.5 * 10 ** 18) });
+      // await mktContract.cancelAuction(3);
       await mktContract.makeBid(3, { from: accounts[3], value: String(2.0 * 10 ** 18) });
       await mktContract.makeBid(3, { from: accounts[4], value: String(2.2 * 10 ** 18) });
       await time.increase(time.duration.days(1));
       await expectRevert(mktContract.makeBid(3, { from: accounts[5], value: String(3.0 * 10 ** 18) }), 'Auction has ended');
-
     })
   });
 });
