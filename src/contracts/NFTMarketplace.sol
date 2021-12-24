@@ -111,12 +111,18 @@ contract NFTMarketplace {
 
     function fillOffer(uint256 _offerId) public payable {
         _Offer storage _offer = offers[_offerId];
-        require(_offer.offerId == _offerId); //, "The offer must exist"
-        require(_offer.user != msg.sender); //, "The owner of the offer cannot fill it"
-        require(!_offer.fulfilled); // , "An offer cannot be fulfilled twice"
-        require(!_offer.cancelled); //, "A cancelled offer cannot be fulfilled"
+        require(_offer.offerId == _offerId, "The offer must exist");
+        require(
+            _offer.user != msg.sender,
+            "The owner of the offer cannot fill it"
+        );
+        require(!_offer.fulfilled, "An offer cannot be fulfilled twice");
+        require(!_offer.cancelled, "A cancelled offer cannot be fulfilled");
 
-        require(msg.value + userFunds[msg.sender] >= _offer.price); // ,"The ETH amount should match with the NFT Price"
+        require(
+            msg.value + userFunds[msg.sender] >= _offer.price,
+            "The ETH amount should match with the NFT Price"
+        );
         nftCollection.transferFrom(address(this), msg.sender, _offer.id);
         _offer.fulfilled = true;
         _marketTransfer(msg.value, _offer.id, _offer.user);
@@ -126,10 +132,19 @@ contract NFTMarketplace {
 
     function cancelOffer(uint256 _offerId) public {
         _Offer storage _offer = offers[_offerId];
-        require(_offer.offerId == _offerId); //, "The offer must exist"
-        require(_offer.user == msg.sender); // , "The offer can only be canceled by the owner"
-        require(_offer.fulfilled == false); // , "A fulfilled offer cannot be cancelled"
-        require(_offer.cancelled == false); // , "An offer cannot be cancelled twice"
+        require(_offer.offerId == _offerId, "The offer must exist");
+        require(
+            _offer.user == msg.sender,
+            "The offer can only be canceled by the owner"
+        );
+        require(
+            _offer.fulfilled == false,
+            "A fulfilled offer cannot be cancelled"
+        );
+        require(
+            _offer.cancelled == false,
+            "An offer cannot be cancelled twice"
+        );
         nftCollection.transferFrom(address(this), msg.sender, _offer.id);
         _offer.cancelled = true;
         emit OfferCancelled(_offerId, _offer.id, msg.sender);
@@ -137,9 +152,15 @@ contract NFTMarketplace {
 
     function updateOffer(uint256 _offerId, uint256 _price) public {
         _Offer storage _offer = offers[_offerId];
-        require(_offer.offerId == _offerId); // , "The offer must exist"
-        require(_offer.user == msg.sender); // , "The offer can only be updated by the owner"
-        require(_offer.fulfilled == false); // , "A fulfilled offer cannot be updated"
+        require(_offer.offerId == _offerId, "The offer must exist");
+        require(
+            _offer.user == msg.sender,
+            "The offer can only be updated by the owner"
+        );
+        require(
+            _offer.fulfilled == false,
+            "A fulfilled offer cannot be updated"
+        );
 
         _offer.price = _price;
         emit Offer(_offerId, _offer.id, msg.sender, _price, false, false);
@@ -165,11 +186,15 @@ contract NFTMarketplace {
     }
 
     function cancelAuction(uint256 _tokenId) public {
-        require(nftAuctions[_tokenId].nftSeller != msg.sender); // , "The only owner of the auction can cancel it"
+        require(
+            nftAuctions[_tokenId].nftSeller != msg.sender,
+            "The only owner of the auction can cancel it"
+        );
         require(
             nftAuctions[_tokenId].nftHighestBid <
-                nftAuctions[_tokenId].buyNowPrice
-        ); // , "The bid must not exist"
+                nftAuctions[_tokenId].buyNowPrice,
+            "The bid must not exist"
+        );
         nftCollection.transferFrom(address(this), msg.sender, _tokenId);
 
         nftAuctions[_tokenId].buyNowPrice = 0;
@@ -180,8 +205,14 @@ contract NFTMarketplace {
     }
 
     function settleAuction(uint256 _tokenId) public {
-        require(nftAuctions[_tokenId].nftSeller != address(0)); // , "The auction must exist"
-        require(nftAuctions[_tokenId].auctionEnd > block.timestamp); // , "Auction should be ended"
+        require(
+            nftAuctions[_tokenId].nftSeller != address(0),
+            "The auction must exist"
+        );
+        require(
+            nftAuctions[_tokenId].auctionEnd > block.timestamp,
+            "Auction should be ended"
+        );
 
         emit NftAuctionSettled(
             _tokenId,
@@ -209,15 +240,27 @@ contract NFTMarketplace {
     }
 
     function makeBid(uint256 _tokenId) public payable {
-        require(nftAuctions[_tokenId].nftSeller != address(0)); // , "The auction must exist"
-        require(nftAuctions[_tokenId].auctionEnd > block.timestamp); // , "Auction has ended"
-        require(nftAuctions[_tokenId].nftSeller != msg.sender); // , "The owner of the auction cannot bid it"
+        require(
+            nftAuctions[_tokenId].nftSeller != address(0),
+            "The auction must exist"
+        );
+        require(
+            nftAuctions[_tokenId].auctionEnd > block.timestamp,
+            "Auction has ended"
+        );
+        require(
+            nftAuctions[_tokenId].nftSeller != msg.sender,
+            "The owner of the auction cannot bid it"
+        );
         uint256 limit = nftAuctions[_tokenId].nftHighestBid;
         if (limit < nftAuctions[_tokenId].buyNowPrice) {
             if (limit / 10 > 0.01 ether) limit = (limit * 11) / 10;
             else limit += 0.01 ether;
         } else limit = nftAuctions[_tokenId].buyNowPrice;
-        require(msg.value >= limit); // , "The ETH amount should be more than 110% of NFT highest bid Price"
+        require(
+            msg.value >= limit,
+            "The ETH amount should be more than 110% of NFT highest bid Price"
+        );
 
         address _receiver = nftAuctions[_tokenId].nftHighestBidder;
         if (_receiver == address(0))
@@ -243,9 +286,18 @@ contract NFTMarketplace {
     }
 
     function cancelBid(uint256 _tokenId) public {
-        require(nftAuctions[_tokenId].nftSeller != address(0)); // , "The auction must exist"
-        require(nftAuctions[_tokenId].auctionEnd > block.timestamp); // , "Auction has ended"
-        require(msg.sender == nftAuctions[_tokenId].nftHighestBidder); // , "Only highest bidder can cancel the bid"
+        require(
+            nftAuctions[_tokenId].nftSeller != address(0),
+            "The auction must exist"
+        );
+        require(
+            nftAuctions[_tokenId].auctionEnd > block.timestamp,
+            "Auction has ended"
+        );
+        require(
+            msg.sender == nftAuctions[_tokenId].nftHighestBidder,
+            "Only highest bidder can cancel the bid"
+        );
 
         userFunds[msg.sender] =
             nftAuctions[_tokenId].nftHighestBid -
@@ -258,7 +310,10 @@ contract NFTMarketplace {
     }
 
     function claimFunds() public {
-        require(userFunds[msg.sender] > 0); // , "This user has no funds to be claimed"
+        require(
+            userFunds[msg.sender] > 0,
+            "This user has no funds to be claimed"
+        );
         payable(msg.sender).transfer(userFunds[msg.sender]);
         emit ClaimFunds(msg.sender, userFunds[msg.sender]);
         userFunds[msg.sender] = 0;
