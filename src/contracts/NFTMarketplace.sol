@@ -68,66 +68,15 @@ contract NFTMarketplace {
     // event OfferUpdated(uint256 offerId, uint256 price);
     event OfferCancelled(uint256 offerId, uint256 id, address owner);
     event ClaimFunds(address user, uint256 amount);
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
 
     constructor(address _nftCollection) {
         nftCollection = NFTCollection(_nftCollection);
         _owner = msg.sender;
-        emit OwnershipTransferred(address(0), _owner);
     }
 
-    /**
-     * @return the address of the owner.
-     */
-    function owner() public view returns (address) {
-        return _owner;
-    }
-
-    /**
-     * @dev Throws if called by any account other than the owner.
-     */
     modifier onlyOwner() {
-        require(isOwner());
+        require(msg.sender == _owner);
         _;
-    }
-
-    /**
-     * @return true if `msg.sender` is the owner of the contract.
-     */
-    function isOwner() public view returns (bool) {
-        return msg.sender == _owner;
-    }
-
-    /**
-     * @dev Allows the current owner to relinquish control of the contract.
-     * @notice Renouncing to ownership will leave the contract without an owner.
-     * It will not be possible to call the functions with the `onlyOwner`
-     * modifier anymore.
-     */
-    function renounceOwnership() public onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
-    }
-
-    /**
-     * @dev Allows the current owner to transfer control of the contract to a newOwner.
-     * @param newOwner The address to transfer ownership to.
-     */
-    function transferOwnership(address newOwner) public onlyOwner {
-        _transferOwnership(newOwner);
-    }
-
-    /**
-     * @dev Transfers control of the contract to a newOwner.
-     * @param newOwner The address to transfer ownership to.
-     */
-    function _transferOwnership(address newOwner) internal {
-        require(newOwner != address(0));
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
     }
 
     function _marketTransfer(
@@ -368,6 +317,11 @@ contract NFTMarketplace {
         payable(msg.sender).transfer(userFunds[msg.sender]);
         emit ClaimFunds(msg.sender, userFunds[msg.sender]);
         userFunds[msg.sender] = 0;
+    }
+
+    function transferOwnership(address newOwner) public onlyOwner {
+        require(newOwner != address(0));
+        _owner = newOwner;
     }
 
     // Fallback: reverts if Ether is sent to this smart-contract by mistake
