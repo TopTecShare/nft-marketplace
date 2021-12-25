@@ -246,6 +246,7 @@ contract('NFTMarketplace', (accounts) => {
     });
 
     it('Settle Auction after bid period ', async () => {
+      await mktContract.claimFunds({from: accounts[0]});
       const result = await mktContract.settleAuction(3);
       expectEvent(result, 'NftAuctionSettled', {
         tokenId: '3',
@@ -254,6 +255,8 @@ contract('NFTMarketplace', (accounts) => {
         price: String(2.0 * 10 ** 18),
         winner: accounts[3],
       });
+      const fundsAfter = await mktContract.userFunds(accounts[0]);
+      assert.equal(fundsAfter, String(2.0 * 0.9 * 10 ** 18));
     });
   });
 });
