@@ -1,10 +1,8 @@
-const { expectRevert } = require('@openzeppelin/test-helpers');
+const { expectRevert, time, ether, expectEvent } = require('@openzeppelin/test-helpers');
 const { assertion } = require('@openzeppelin/test-helpers/src/expectRevert');
 
 const NFTCollection = artifacts.require('./NFTCollection.sol');
 const NFTMarketplace = artifacts.require('./NFTMarketplace.sol');
-// const time = require("../src/helpers/time");
-const { time } = require("@openzeppelin/test-helpers");
 
 contract('NFTMarketplace', (accounts) => {
   let nftContract;
@@ -145,7 +143,22 @@ contract('NFTMarketplace', (accounts) => {
   });
 
   describe('Make Auction', () => {
-    it('Make Auction', async () => {
+    before(async () => {
+      await nftContract.safeMint('testURI3', 100); // royalty: 1%
+    })
+
+    it('Creates an Auction and Emits an Event Auction', async () => {
+      await nftContract.approve(mktContract.address, 3);
+      const result = await mktContract.makeAuction(3, ether('0.2'), 4);
+
+      expectEvent(result, 'NftAuctionCreated', {
+        buyNowPrice: ether('0.2'),
+        tokenId: '3',
+        nftSeller: accounts[0],
+      });
+    });
+
+    xit('Make Auction', async () => {
       await nftContract.safeMint('testURI3', 100); // royalty: 1%
       await nftContract.approve(mktContract.address, 3);
       await mktContract.makeAuction(3, String(1.0 * 10 ** 18), 4);
@@ -153,11 +166,31 @@ contract('NFTMarketplace', (accounts) => {
       await nftContract.approve(mktContract.address, 3);
       await mktContract.makeAuction(3, String(1.0 * 10 ** 18), 4);
       await mktContract.makeBid(3, { from: accounts[2], value: String(1.5 * 10 ** 18) });
-      // await mktContract.cancelAuction(3);
+      await expectRevert(mktContract.cancelAuction(3), 'The bid must not exist');
       await mktContract.makeBid(3, { from: accounts[3], value: String(2.0 * 10 ** 18) });
       await mktContract.makeBid(3, { from: accounts[4], value: String(2.2 * 10 ** 18) });
       await time.increase(time.duration.days(1));
       await expectRevert(mktContract.makeBid(3, { from: accounts[5], value: String(3.0 * 10 ** 18) }), 'Auction has ended');
+    })
+  });
+
+  describe('Cancel Auction', () => {
+    it('Cancels an Auction and Emits an Event Cancel Auction', async () => {
+      const result = await mktContract.cancelAuction(3);
+      expectEvent(result, 'NftAuctionCanceled', {
+        tokenId: '3',
+        nftSeller: accounts[0],
+      });
+    });
+    it('Rejects Cancels an Auction for not owner', async () => {
+      await expectRevert(mktContract.cancelAuction(3), "The only owner of the auction can cancel it");
+      await nftContract.approve(mktContract.address, 3);
+      await mktContract.makeAuction(3, ether('0.2'), 4);
+      await expectRevert(mktContract.cancelAuction(3, { from: accounts[5] }), "The only owner of the auction can cancel it");
+    })
+    it('Rejects Cancels an Auction after bid created', async () => {
+      await mktContract.makeBid(3, { from: accounts[2], value: String(1.5 * 10 ** 18) });
+      await expectRevert(mktContract.cancelAuction(3), "The bid must not exist");
     })
   });
 });
