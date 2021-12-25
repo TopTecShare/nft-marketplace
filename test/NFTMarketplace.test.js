@@ -157,21 +157,6 @@ contract('NFTMarketplace', (accounts) => {
         nftSeller: accounts[0],
       });
     });
-
-    xit('Make Auction', async () => {
-      await nftContract.safeMint('testURI3', 100); // royalty: 1%
-      await nftContract.approve(mktContract.address, 3);
-      await mktContract.makeAuction(3, String(1.0 * 10 ** 18), 4);
-      await mktContract.cancelAuction(3);
-      await nftContract.approve(mktContract.address, 3);
-      await mktContract.makeAuction(3, String(1.0 * 10 ** 18), 4);
-      await mktContract.makeBid(3, { from: accounts[2], value: String(1.5 * 10 ** 18) });
-      await expectRevert(mktContract.cancelAuction(3), 'The bid must not exist');
-      await mktContract.makeBid(3, { from: accounts[3], value: String(2.0 * 10 ** 18) });
-      await mktContract.makeBid(3, { from: accounts[4], value: String(2.2 * 10 ** 18) });
-      await time.increase(time.duration.days(1));
-      await expectRevert(mktContract.makeBid(3, { from: accounts[5], value: String(3.0 * 10 ** 18) }), 'Auction has ended');
-    })
   });
 
   describe('Cancel Auction', () => {
@@ -189,8 +174,53 @@ contract('NFTMarketplace', (accounts) => {
       await expectRevert(mktContract.cancelAuction(3, { from: accounts[5] }), "The only owner of the auction can cancel it");
     })
     it('Rejects Cancels an Auction after bid created', async () => {
-      await mktContract.makeBid(3, { from: accounts[2], value: String(1.5 * 10 ** 18) });
+      await mktContract.makeBid(3, { from: accounts[7], value: String(1.5 * 10 ** 18) });
       await expectRevert(mktContract.cancelAuction(3), "The bid must not exist");
     })
+  });
+
+  describe('Make bid', () => {
+    it('Make a bid and Emits an Event Make bid', async () => {
+      const fundsBefore = await mktContract.userFunds(accounts[7]);
+      assert.equal(fundsBefore, '0');
+      const result = await mktContract.makeBid(3, { from: accounts[3], value: String(2.0 * 10 ** 18) });
+      expectEvent(result, 'BidCreated', {
+        tokenId: '3',
+        nftHighestBid: String(2.0 * 10 ** 18),
+        nftHighestBidder: accounts[3],
+      });
+    })
+
+    it('Refund 10% to auction creator from first bidder', async () => {
+      const funds = await mktContract.userFunds(accounts[0]);
+      assert.equal(funds, String(1.5 * 10 ** 18 * 0.1)); // No fee because, marketplace owner and token minter
+    })
+
+    it('Refund 10% to previous bidder', async () => {
+      const fundsAfter = await mktContract.userFunds(accounts[7]);
+      assert.equal(fundsAfter, String((1.5 * 0.9 + 2.0 * 0.1) * 10 ** 18));
+    })
+
+    it('Rejects Make a bid for non existing Auction', async () => {
+      await expectRevert(mktContract.makeBid(2, { from: accounts[4], value: String(2.5 * 10 ** 18) }), "The auction must exist");
+    })
+
+    it('Rejects Make a bid for owner of Auction', async () => {
+      await expectRevert(mktContract.makeBid(3, { value: String(2.5 * 10 ** 18) }), "The owner of the auction cannot bid it");
+    })
+
+    it('Rejects Make a bid for no more 110% bid price', async () => {
+      await expectRevert(mktContract.makeBid(3, { from: accounts[4], value: String(2.19 * 10 ** 18) }), "The ETH amount should be more than 110% of NFT highest bid Price");
+    })
+
+    it('Rejects Make a bid after bid period', async () => {
+      await time.increase(time.duration.days(1));
+      await expectRevert(mktContract.makeBid(3, { from: accounts[4], value: String(2.5 * 10 ** 18) }), "Auction has ended");
+    })
+
+  });
+
+  describe('Cancel bid', () => {
+
   });
 });

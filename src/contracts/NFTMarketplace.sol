@@ -263,14 +263,14 @@ contract NFTMarketplace {
         );
 
         address _receiver = nftAuctions[_tokenId].nftHighestBidder;
-        if (_receiver == address(0))
+        if (_receiver == address(0)) {
             _receiver = nftAuctions[_tokenId].nftSeller;
-        else
-            userFunds[_receiver] =
+            _marketTransfer(msg.value / 10, _tokenId, _receiver);
+        } else
+            userFunds[_receiver] +=
                 nftAuctions[_tokenId].nftHighestBid -
                 nftAuctions[_tokenId].nftHighestBid /
-                10;
-        _marketTransfer(msg.value / 10, _tokenId, _receiver);
+                10 + msg.value / 10;
 
         nftAuctions[_tokenId].nftHighestBidder = msg.sender;
         nftAuctions[_tokenId].nftHighestBid = msg.value;
