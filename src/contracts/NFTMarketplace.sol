@@ -210,7 +210,7 @@ contract NFTMarketplace {
             "The auction must exist"
         );
         require(
-            nftAuctions[_tokenId].auctionEnd > block.timestamp,
+            nftAuctions[_tokenId].auctionEnd <= block.timestamp,
             "Auction should be ended"
         );
 
