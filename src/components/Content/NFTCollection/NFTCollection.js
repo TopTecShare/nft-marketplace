@@ -43,7 +43,7 @@ const NFTCollection = () => {
 
   const updateOfferHandler = (event, id, key) => {
     event.preventDefault();
-
+    console.log(id);
     const enteredPrice = web3.utils.toWei(priceRefs.current[key].current.value, 'ether');
     marketplaceCtx.contract.methods.updateOffer(id, enteredPrice).send({ from: web3Ctx.account })
       .on('transactionHash', (hash) => {
@@ -116,7 +116,7 @@ const NFTCollection = () => {
                     <img src={eth} width="25" height="25" className="align-center float-start" alt="price icon"></img>
                     <p className="text-start"><b>{`${price}`}</b></p>
                   </div>
-                  <form className="row g-2 mx-auto" onSubmit={(e) => updateOfferHandler(e, NFT.id, key)}>
+                  <form className="row g-2 mx-auto" onSubmit={(e) => updateOfferHandler(e, marketplaceCtx.offers[index].offerId, key)}>
                     <div className="col-5 d-grid gap-2">
                       <button type="submit" className="btn btn-secondary">Update</button>
                     </div>

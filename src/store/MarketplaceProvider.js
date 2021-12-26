@@ -70,7 +70,10 @@ const marketplaceReducer = (state, action) => {
   }
 
   if (action.type === 'UPDATEPRICE') {
-    state.offers.map(offer => offer.offerId === parseInt(action.offerId) ? offer.price = parseInt(action.price) : 0);
+    state.offers.map(offer => offer.offerId == action.offerId ? offer.price = parseInt(action.price) : 0);
+    console.log(state.offers);
+    console.log(action.price);
+    console.log(action.offerId);
     return {
       contract: state.contract,
       offerCount: state.offerCount,
@@ -162,6 +165,7 @@ const MarketplaceProvider = props => {
         return offer;
       })
       .filter(offer => offer.fulfilled === false && offer.cancelled === false);
+    console.log(offers);
     dispatchMarketplaceAction({ type: 'LOADOFFERS', offers: offers });
   };
 

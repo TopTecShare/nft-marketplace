@@ -161,10 +161,6 @@ contract NFTMarketplace {
             _offer.fulfilled == false,
             "A fulfilled offer cannot be updated"
         );
-        require(
-            _offer.cancelled == false,
-            "An offer cannot be updated after canceled"
-        );
 
         _offer.price = _price;
         emit OfferUpdated(_offerId, _price);
