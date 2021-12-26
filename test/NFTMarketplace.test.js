@@ -259,4 +259,11 @@ contract('NFTMarketplace', (accounts) => {
       assert.equal(fundsAfter, String(2.0 * 0.9 * 10 ** 18));
     });
   });
+
+  describe('Auction Info', () => {
+    it('Get Auction Info', async () => {
+      const result = await mktContract.getAuctions();
+      console.log(result);
+    });
+  });
 });

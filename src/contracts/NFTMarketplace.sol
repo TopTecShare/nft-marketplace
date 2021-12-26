@@ -166,6 +166,15 @@ contract NFTMarketplace {
         emit Offer(_offerId, _offer.id, msg.sender, _price, false, false);
     }
 
+    function getAuctions() external view returns(Auction[] memory) {
+        uint256 total = nftCollection.totalSupply();
+        Auction[] memory result = new Auction[](total);
+        for(uint256 i = 0; i < total; i ++) {
+            result[i] = nftAuctions[nftCollection.tokenByIndex(i)];
+        }
+        return result;
+    }
+
     function makeAuction(
         uint256 _tokenId,
         uint256 _price,
