@@ -6,12 +6,13 @@ const defaultMarketplaceState = {
   contract: null,
   offerCount: null,
   offers: [],
+  auctions: [],
   userFunds: null,
   mktIsLoading: true
 };
 
 const marketplaceReducer = (state, action) => {
-  if(action.type === 'CONTRACT') {    
+  if (action.type === 'CONTRACT') {
     return {
       contract: action.contract,
       offerCount: state.offerCount,
@@ -21,7 +22,7 @@ const marketplaceReducer = (state, action) => {
     };
   }
 
-  if(action.type === 'LOADOFFERCOUNT') {    
+  if (action.type === 'LOADOFFERCOUNT') {
     return {
       contract: state.contract,
       offerCount: action.offerCount,
@@ -31,7 +32,7 @@ const marketplaceReducer = (state, action) => {
     };
   }
 
-  if(action.type === 'LOADOFFERS') {    
+  if (action.type === 'LOADOFFERS') {
     return {
       contract: state.contract,
       offerCount: state.offerCount,
@@ -41,7 +42,7 @@ const marketplaceReducer = (state, action) => {
     };
   }
 
-  if(action.type === 'UPDATEOFFER') {    
+  if (action.type === 'UPDATEOFFER') {
     const offers = state.offers.filter(offer => offer.offerId !== parseInt(action.offerId));
 
     return {
@@ -53,11 +54,22 @@ const marketplaceReducer = (state, action) => {
     };
   }
 
-  if(action.type === 'ADDOFFER') {    
+  if (action.type === 'UPDATEPRICE') {
+    state.offers.map(offer => offer.offerId === parseInt(action.offerId) ? offer.price = parseInt(action.price) : 0);
+    return {
+      contract: state.contract,
+      offerCount: state.offerCount,
+      offers: state.offers,
+      userFunds: state.userFunds,
+      mktIsLoading: state.mktIsLoading
+    };
+  }
+
+  if (action.type === 'ADDOFFER') {
     const index = state.offers.findIndex(offer => offer.offerId === parseInt(action.offer.offerId));
     let offers = [];
 
-    if(index === -1) {
+    if (index === -1) {
       offers = [...state.offers, {
         offerId: parseInt(action.offer.offerId),
         id: parseInt(action.offer.id),
@@ -68,7 +80,7 @@ const marketplaceReducer = (state, action) => {
       }];
     } else {
       offers = [...state.offers];
-    }    
+    }
 
     return {
       contract: state.contract,
@@ -79,7 +91,7 @@ const marketplaceReducer = (state, action) => {
     };
   }
 
-  if(action.type === 'LOADFUNDS') {
+  if (action.type === 'LOADFUNDS') {
     return {
       contract: state.contract,
       offerCount: state.offerCount,
@@ -89,7 +101,7 @@ const marketplaceReducer = (state, action) => {
     };
   }
 
-  if(action.type === 'LOADING') {    
+  if (action.type === 'LOADING') {
     return {
       contract: state.contract,
       offerCount: state.offerCount,
@@ -98,75 +110,99 @@ const marketplaceReducer = (state, action) => {
       mktIsLoading: action.loading
     };
   }
-  
+
   return defaultMarketplaceState;
 };
 
 const MarketplaceProvider = props => {
   const [MarketplaceState, dispatchMarketplaceAction] = useReducer(marketplaceReducer, defaultMarketplaceState);
-  
+
   const loadContractHandler = (web3, NFTMarketplace, deployedNetwork) => {
-    const contract = deployedNetwork ? new web3.eth.Contract(NFTMarketplace.abi, deployedNetwork.address): '';
-    dispatchMarketplaceAction({type: 'CONTRACT', contract: contract}); 
+    const contract = deployedNetwork ? new web3.eth.Contract(NFTMarketplace.abi, deployedNetwork.address) : '';
+    dispatchMarketplaceAction({ type: 'CONTRACT', contract: contract });
     return contract;
   };
 
-  const loadOfferCountHandler = async(contract) => {
+  const loadOfferCountHandler = async (contract) => {
     const offerCount = await contract.methods.offerCount().call();
-    dispatchMarketplaceAction({type: 'LOADOFFERCOUNT', offerCount: offerCount});
+    dispatchMarketplaceAction({ type: 'LOADOFFERCOUNT', offerCount: offerCount });
     return offerCount;
   };
 
-  const loadOffersHandler = async(contract, offerCount) => {
+  const loadOffersHandler = async (contract, offerCount) => {
     let offers = [];
-    for(let i = 0; i < offerCount; i++) {
+    for (let i = 0; i < offerCount; i++) {
       const offer = await contract.methods.offers(i + 1).call();
       offers.push(offer);
     }
     offers = offers
-    .map(offer => {
-      offer.offerId = parseInt(offer.offerId);
-      offer.id = parseInt(offer.id);
-      offer.price = parseInt(offer.price);
-      return offer;
-    })
-    .filter(offer => offer.fulfilled === false && offer.cancelled === false); 
-    dispatchMarketplaceAction({type: 'LOADOFFERS', offers: offers});
+      .map(offer => {
+        offer.offerId = parseInt(offer.offerId);
+        offer.id = parseInt(offer.id);
+        offer.price = parseInt(offer.price);
+        return offer;
+      })
+      .filter(offer => offer.fulfilled === false && offer.cancelled === false);
+    dispatchMarketplaceAction({ type: 'LOADOFFERS', offers: offers });
+  };
+
+  const loadAuctionsHandler = async (contract, offerCount) => {
+    let auctions = [];
+    for (let i = 0; i < offerCount; i++) {
+      const offer = await contract.methods.auctions(i + 1).call();
+      auctions.push(offer);
+    }
+    auctions = auctions
+      .map(offer => {
+        offer.offerId = parseInt(offer.offerId);
+        offer.id = parseInt(offer.id);
+        offer.price = parseInt(offer.price);
+        return offer;
+      })
+      .filter(offer => offer.fulfilled === false && offer.cancelled === false);
+    dispatchMarketplaceAction({ type: 'LOADOFFERS', auctions: auctions });
   };
 
   const updateOfferHandler = (offerId) => {
-    dispatchMarketplaceAction({type: 'UPDATEOFFER', offerId: offerId});   
+    dispatchMarketplaceAction({ type: 'UPDATEOFFER', offerId: offerId });
+  };
+
+  const updatePriceHandler = (offerId, price) => {
+    dispatchMarketplaceAction({ type: 'UPDATEPRICE', offerId: offerId, price: price });
   };
 
   const addOfferHandler = (offer) => {
-    dispatchMarketplaceAction({type: 'ADDOFFER', offer: offer});   
+    dispatchMarketplaceAction({ type: 'ADDOFFER', offer: offer });
   };
 
-  const loadUserFundsHandler = async(contract, account) => {
+  const loadUserFundsHandler = async (contract, account) => {
     const userFunds = await contract.methods.userFunds(account).call();
-    dispatchMarketplaceAction({type: 'LOADFUNDS', userFunds: userFunds});
+    dispatchMarketplaceAction({ type: 'LOADFUNDS', userFunds: userFunds });
     return userFunds;
   };
 
   const setMktIsLoadingHandler = (loading) => {
-    dispatchMarketplaceAction({type: 'LOADING', loading: loading});
+    dispatchMarketplaceAction({ type: 'LOADING', loading: loading });
   };
 
   const marketplaceContext = {
     contract: MarketplaceState.contract,
     offerCount: MarketplaceState.offerCount,
     offers: MarketplaceState.offers,
+    auctions: MarketplaceState.auctions,
     userFunds: MarketplaceState.userFunds,
     mktIsLoading: MarketplaceState.mktIsLoading,
     loadContract: loadContractHandler,
     loadOfferCount: loadOfferCountHandler,
     loadOffers: loadOffersHandler,
+    loadAuctions: loadAuctionsHandler,
     updateOffer: updateOfferHandler,
+    updatePrice: updatePriceHandler,
     addOffer: addOfferHandler,
     loadUserFunds: loadUserFundsHandler,
     setMktIsLoading: setMktIsLoadingHandler
   };
-  
+
   return (
     <MarketplaceContext.Provider value={marketplaceContext}>
       {props.children}

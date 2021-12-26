@@ -19,6 +19,8 @@ const MintForm = () => {
   const [capturedFileBuffer, setCapturedFileBuffer] = useState(null);
   const [fileIsValid, setFileIsValid] = useState(true);
 
+  const [fileUrl, setFileUrl] = useState('');
+
   const web3Ctx = useContext(Web3Context);
   const collectionCtx = useContext(CollectionContext);
 
@@ -41,6 +43,7 @@ const MintForm = () => {
     event.preventDefault();
 
     const file = event.target.files[0];
+    setFileUrl(URL.createObjectURL(file));
 
     const reader = new window.FileReader();
     reader.readAsArrayBuffer(file);
@@ -148,6 +151,7 @@ const MintForm = () => {
             className={`${fileClass} mb-1`}
             onChange={captureFile}
           />
+          <img src={fileUrl} className="card-img-bottom" alt={`Preview`} />
         </div>
       </div>
       <button type='submit' className='btn btn-lg btn-info text-white btn-block'>MINT</button>

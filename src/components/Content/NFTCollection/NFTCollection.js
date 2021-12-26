@@ -1,4 +1,4 @@
-import { useContext, useRef, createRef, useState } from 'react';
+import { useContext, useRef, createRef } from 'react';
 
 import web3 from '../../../connection/web3';
 import Web3Context from '../../../store/web3-context';
@@ -45,10 +45,10 @@ const NFTCollection = () => {
     event.preventDefault();
 
     const enteredPrice = web3.utils.toWei(priceRefs.current[key].current.value, 'ether');
-    marketplaceCtx.setMktIsLoading(true);
+
     marketplaceCtx.contract.methods.updateOffer(id, enteredPrice).send({ from: web3Ctx.account })
       .on('transactionHash', (hash) => {
-        window.location.reload(false);
+        marketplaceCtx.setMktIsLoading(true);
       })
       .on('error', (error) => {
         window.alert('Something went wrong when pushing to the blockchain');
@@ -62,11 +62,9 @@ const NFTCollection = () => {
     if (price < marketplaceCtx.userFunds) price = 0;
     else price -= marketplaceCtx.userFunds;
 
-    marketplaceCtx.setMktIsLoading(true);
-
     marketplaceCtx.contract.methods.fillOffer(marketplaceCtx.offers[buyIndex].offerId).send({ from: web3Ctx.account, value: price })
       .on('transactionHash', (hash) => {
-        window.location.reload(false);
+        marketplaceCtx.setMktIsLoading(true);
       })
       .on('error', (error) => {
         window.alert('Something went wrong when pushing to the blockchain');
