@@ -65,7 +65,7 @@ contract NFTMarketplace {
     event BidCanceled(uint256 tokenId);
 
     event OfferFilled(uint256 offerId, uint256 id, address newOwner);
-    // event OfferUpdated(uint256 offerId, uint256 price);
+    event OfferUpdated(uint256 offerId, uint256 price);
     event OfferCancelled(uint256 offerId, uint256 id, address owner);
     event ClaimFunds(address user, uint256 amount);
 
@@ -161,15 +161,19 @@ contract NFTMarketplace {
             _offer.fulfilled == false,
             "A fulfilled offer cannot be updated"
         );
+        require(
+            _offer.cancelled == false,
+            "An offer cannot be updated after canceled"
+        );
 
         _offer.price = _price;
-        emit Offer(_offerId, _offer.id, msg.sender, _price, false, false);
+        emit OfferUpdated(_offerId, _price);
     }
 
-    function getAuctions() external view returns(Auction[] memory) {
+    function getAuctions() external view returns (Auction[] memory) {
         uint256 total = nftCollection.totalSupply();
         Auction[] memory result = new Auction[](total);
-        for(uint256 i = 0; i < total; i ++) {
+        for (uint256 i = 0; i < total; i++) {
             result[i] = nftAuctions[nftCollection.tokenByIndex(i)];
         }
         return result;
@@ -279,7 +283,9 @@ contract NFTMarketplace {
             userFunds[_receiver] +=
                 nftAuctions[_tokenId].nftHighestBid -
                 nftAuctions[_tokenId].nftHighestBid /
-                10 + msg.value / 10;
+                10 +
+                msg.value /
+                10;
 
         nftAuctions[_tokenId].nftHighestBidder = msg.sender;
         nftAuctions[_tokenId].nftHighestBid = msg.value;

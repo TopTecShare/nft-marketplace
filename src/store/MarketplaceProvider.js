@@ -17,6 +17,7 @@ const marketplaceReducer = (state, action) => {
       contract: action.contract,
       offerCount: state.offerCount,
       offers: state.offers,
+      auctions: state.auctions,
       userFunds: state.userFunds,
       mktIsLoading: state.mktIsLoading
     };
@@ -27,6 +28,7 @@ const marketplaceReducer = (state, action) => {
       contract: state.contract,
       offerCount: action.offerCount,
       offers: state.offers,
+      auctions: state.auctions,
       userFunds: state.userFunds,
       mktIsLoading: state.mktIsLoading
     };
@@ -37,6 +39,18 @@ const marketplaceReducer = (state, action) => {
       contract: state.contract,
       offerCount: state.offerCount,
       offers: action.offers,
+      auctions: state.auctions,
+      userFunds: state.userFunds,
+      mktIsLoading: state.mktIsLoading
+    };
+  }
+
+  if (action.type === 'LOADAUCTIONS') {
+    return {
+      contract: state.contract,
+      offerCount: state.offerCount,
+      offers: action.offers,
+      auctions: state.auctions,
       userFunds: state.userFunds,
       mktIsLoading: state.mktIsLoading
     };
@@ -49,6 +63,7 @@ const marketplaceReducer = (state, action) => {
       contract: state.contract,
       offerCount: state.offerCount,
       offers: offers,
+      auctions: state.auctions,
       userFunds: state.userFunds,
       mktIsLoading: state.mktIsLoading
     };
@@ -60,6 +75,7 @@ const marketplaceReducer = (state, action) => {
       contract: state.contract,
       offerCount: state.offerCount,
       offers: state.offers,
+      auctions: state.auctions,
       userFunds: state.userFunds,
       mktIsLoading: state.mktIsLoading
     };
@@ -86,6 +102,7 @@ const marketplaceReducer = (state, action) => {
       contract: state.contract,
       offerCount: state.offerCount,
       offers: offers,
+      auctions: state.auctions,
       userFunds: state.userFunds,
       mktIsLoading: state.mktIsLoading
     };
@@ -96,6 +113,7 @@ const marketplaceReducer = (state, action) => {
       contract: state.contract,
       offerCount: state.offerCount,
       offers: state.offers,
+      auctions: state.auctions,
       userFunds: action.userFunds,
       mktIsLoading: state.mktIsLoading
     };
@@ -106,6 +124,7 @@ const marketplaceReducer = (state, action) => {
       contract: state.contract,
       offerCount: state.offerCount,
       offers: state.offers,
+      auctions: state.auctions,
       userFunds: state.userFunds,
       mktIsLoading: action.loading
     };
@@ -146,21 +165,11 @@ const MarketplaceProvider = props => {
     dispatchMarketplaceAction({ type: 'LOADOFFERS', offers: offers });
   };
 
-  const loadAuctionsHandler = async (contract, offerCount) => {
-    let auctions = [];
-    for (let i = 0; i < offerCount; i++) {
-      const offer = await contract.methods.auctions(i + 1).call();
-      auctions.push(offer);
-    }
-    auctions = auctions
-      .map(offer => {
-        offer.offerId = parseInt(offer.offerId);
-        offer.id = parseInt(offer.id);
-        offer.price = parseInt(offer.price);
-        return offer;
-      })
-      .filter(offer => offer.fulfilled === false && offer.cancelled === false);
-    dispatchMarketplaceAction({ type: 'LOADOFFERS', auctions: auctions });
+  const loadAuctionsHandler = async (contract) => {
+    let auctions = await contract.methods.getAuctions().call();
+    console.log(auctions);
+
+    dispatchMarketplaceAction({ type: 'LOADAUCTIONS', auctions: auctions });
   };
 
   const updateOfferHandler = (offerId) => {
