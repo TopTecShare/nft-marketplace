@@ -43,7 +43,6 @@ const NFTCollection = () => {
 
   const updateOfferHandler = (event, id, key) => {
     event.preventDefault();
-    console.log(id);
     const enteredPrice = web3.utils.toWei(priceRefs.current[key].current.value, 'ether');
     marketplaceCtx.contract.methods.updateOffer(id, enteredPrice).send({ from: web3Ctx.account })
       .on('transactionHash', (hash) => {
