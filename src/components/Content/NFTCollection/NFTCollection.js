@@ -71,9 +71,8 @@ const NFTCollection = () => {
   const buyHandler = (event) => {
     const buyIndex = parseInt(event.target.value);
     let price = marketplaceCtx.offers[buyIndex].price;
-    if (price < marketplaceCtx.userFunds) price = 0;
+    if (price < marketplaceCtx.userFunds) price = 1;
     else price -= marketplaceCtx.userFunds;
-
     marketplaceCtx.contract.methods
       .fillOffer(marketplaceCtx.offers[buyIndex].offerId)
       .send({ from: web3Ctx.account, value: price })

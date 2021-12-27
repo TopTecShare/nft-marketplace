@@ -125,7 +125,7 @@ contract NFTMarketplace {
         );
         nftCollection.transferFrom(address(this), msg.sender, _offer.id);
         _offer.fulfilled = true;
-        _marketTransfer(msg.value, _offer.id, _offer.user);
+        _marketTransfer(_offer.price, _offer.id, _offer.user);
         userFunds[msg.sender] -= _offer.price - msg.value;
         emit OfferFilled(_offerId, _offer.id, msg.sender);
     }
