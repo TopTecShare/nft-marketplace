@@ -263,7 +263,7 @@ contract('NFTMarketplace', (accounts) => {
   describe('Auction Info', () => {
     it('Get Auction Info', async () => {
       const result = await mktContract.getAuctions();
-      console.log(result);
+      // console.log(result);
     });
   });
 });
