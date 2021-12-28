@@ -166,7 +166,11 @@ contract NFTMarketplace {
         emit OfferUpdated(_offerId, _price);
     }
 
-    function getAuctions() external view returns (Auction[] memory, uint256[] memory) {
+    function getAuctions()
+        external
+        view
+        returns (Auction[] memory, uint256[] memory)
+    {
         uint256 total = nftCollection.totalSupply();
         Auction[] memory result = new Auction[](total);
         uint256[] memory tokenIds = new uint256[](total);
@@ -335,6 +339,14 @@ contract NFTMarketplace {
     function transferOwnership(address newOwner) public onlyOwner {
         require(newOwner != address(0));
         _owner = newOwner;
+    }
+
+    function updateMarketFee(uint256 _fee) public onlyOwner {
+        require(
+            _fee >= 0 && _fee <= 1000,
+            "Marketplace fee can not exceed 10% or negative"
+        );
+        marketFee = _fee;
     }
 
     // Fallback: reverts if Ether is sent to this smart-contract by mistake

@@ -88,9 +88,6 @@ const marketplaceReducer = (state, action) => {
   }
 
   if (action.type === "ADDOFFER") {
-    console.log(state.offers);
-    console.log(action);
-    alert('')
     const index = state.offers.findIndex(
       (offer) => offer.offerId === parseInt(action.offer.offerId)
     );
