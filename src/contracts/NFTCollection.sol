@@ -45,6 +45,10 @@ contract NFTCollection is ERC721, ERC721Enumerable {
 
     function safeMint(string memory _tokenURI, uint256 _royalty) public {
         require(!_tokenURIExists[_tokenURI], "The token URI should be unique");
+        require(
+            _royalty <= 1000 && _royalty >= 0,
+            "Royalty can not exceed 10% or negative"
+        );
         tokenURIs.push(_tokenURI);
         uint256 _id = tokenURIs.length;
         _tokenIdToTokenURI[_id] = _tokenURI;
@@ -61,5 +65,4 @@ contract NFTCollection is ERC721, ERC721Enumerable {
     function inventor(uint256 tokenId) external view returns (address) {
         return _tokenIdToTokenInventor[tokenId];
     }
-
 }

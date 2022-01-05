@@ -6,9 +6,11 @@ import "./NFTCollection.sol";
 contract NFTMarketplace {
     uint256 public offerCount;
     uint256 marketFee = 250;
+    uint256 donationLimit = 0.005 ether; // per percentage
     mapping(uint256 => _Offer) public offers;
     mapping(address => uint256) public userFunds;
     mapping(uint256 => Auction) public nftAuctions;
+    mapping(uint256 => uint256) public donations;
     NFTCollection nftCollection;
     address private _owner;
 
@@ -84,11 +86,23 @@ contract NFTMarketplace {
         uint256 _tokenId,
         address _receiver
     ) internal {
-        require(_price > 0);
+        require(_price > 0, "No fund to process");
         uint256 royalty = nftCollection.royalty(_tokenId);
         address inventor = nftCollection.inventor(_tokenId);
         userFunds[_owner] += (_price * marketFee) / 10000;
-        userFunds[inventor] += (_price * royalty) / 10000;
+        uint256 roayltyFund = (_price * royalty) / 10000;
+        uint256 loan = ((donationLimit - donations[_tokenId]) * royalty) / 100;
+        if (loan >= roayltyFund) {
+            donations[_tokenId] += (roayltyFund * 100) / royalty;
+            userFunds[_owner] += roayltyFund;
+            roayltyFund = 0;
+        } else {
+            roayltyFund -= loan;
+            userFunds[_owner] += loan;
+            donations[_tokenId] = donationLimit;
+        }
+
+        userFunds[inventor] += roayltyFund;
         userFunds[_receiver] +=
             _price -
             (_price * (marketFee + royalty)) /
@@ -347,6 +361,14 @@ contract NFTMarketplace {
             "Marketplace fee can not exceed 10% or negative"
         );
         marketFee = _fee;
+    }
+
+    function updateDonationLimit(uint256 _fee) public onlyOwner {
+        require(
+            _fee >= 0 && _fee <= 0.01 ether,
+            "Donation fee can not exceed 0.01ether per 1% or negative"
+        );
+        donationLimit = _fee;
     }
 
     // Fallback: reverts if Ether is sent to this smart-contract by mistake
