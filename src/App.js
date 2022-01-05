@@ -34,7 +34,7 @@ const App = () => {
       const account = await web3Ctx.loadAccount(web3);
 
       // Load Network ID
-      const networkId = await web3Ctx.loadNetworkId(web3);
+      // const networkId = await web3Ctx.loadNetworkId(web3);
 
       // Load Contracts      
       const nftDeployedNetwork = {address: "0x2CC3574249B2De2a840444B3322Ac1F151cd56c5"}; // NFTCollection.networks[networkId];
@@ -140,7 +140,7 @@ const App = () => {
     };
 
     loadBlockchainData();
-  }, []);
+  });
 
   const showNavbar = web3 && collectionCtx.contract && marketplaceCtx.contract;
   const showContent = web3 && collectionCtx.contract && marketplaceCtx.contract && web3Ctx.account;
