@@ -37,10 +37,10 @@ const App = () => {
       // const networkId = await web3Ctx.loadNetworkId(web3);
 
       // Load Contracts      
-      const nftDeployedNetwork = {address: "0x2CC3574249B2De2a840444B3322Ac1F151cd56c5"}; // NFTCollection.networks[networkId];
+      const nftDeployedNetwork = {address: "0x33709E6246e7C6b1Afea55BDC6E88Ac90A5406cf"}; // NFTCollection.networks[networkId];
       const nftContract = collectionCtx.loadContract(web3, NFTCollection, nftDeployedNetwork);
 
-      const mktDeployedNetwork = {address: "0xc95Ee1935330E37Bda597663c23D4356a6ec9362"}; // NFTMarketplace.networks[networkId];
+      const mktDeployedNetwork = {address: "0x9EE49857832E868506c0f03Aa913B04E74e2B521"}; // NFTMarketplace.networks[networkId];
       const mktContract = marketplaceCtx.loadContract(web3, NFTMarketplace, mktDeployedNetwork);
 
       if (nftContract) {
@@ -140,7 +140,7 @@ const App = () => {
     };
 
     loadBlockchainData();
-  });
+  }, []);
 
   const showNavbar = web3 && collectionCtx.contract && marketplaceCtx.contract;
   const showContent = web3 && collectionCtx.contract && marketplaceCtx.contract && web3Ctx.account;
